@@ -7,26 +7,31 @@ Actions prioritaires recommandées :
 Remplacer AES-ECB par AES-GCM pour le chiffrement des secrets.
 Désactiver android:allowBackup ou chiffrer les données sensibles.
 Ne pas stocker la logique de vérification de secret uniquement côté client.   B. Task 3 — Analyse du manifeste avec JADX GUI Structure de l'APK
-image
+![lab4](lab4.png)
 AndroidManifest.xml image Champ Valeur Package principal owasp.mstg.uncrackable1 versionName 1.0 versionCode 1 minSdkVersion 19 (Android 4.4 KitKat) targetSdkVersion 28 (Android 9 Pie) Permissions Aucune uses-permission déclarée android:allowBackup true — RISQUE (fuite via adb backup) android:debuggable Non présent android:usesCleartextTraffic Non présent network_security_config.xml Absent image Le fichier strings.xml ne contient aucune donnée sensible hardcodée. On y trouve uniquement des chaînes d'interface utilisateur : nom de l'app (Uncrackable1), label du bouton (Verify), et placeholder (Enter the Secret String). Le secret ne se trouve pas dans les ressources statiques. image Le code décompilé révèle plusieurs mécanismes de protection dans onCreate() : • Détection de root : c.a(), c.b() et c.c() — si l'une est vraie, dialogue bloquant + System.exit(0). • Détection du mode debug : b.a(getApplicationContext()) vérifie si l'app tourne en mode débogage.
 
-image
+![lab4](lab41.png)
 La saisie utilisateur est passée à a.a(string). Si true → "Success!", sinon "Nope...". La logique réelle est dans la classe a.
 
-image
+![lab4](lab42.png)
 Cette classe implémente un déchiffrement AES-ECB avec padding PKCS7. La méthode statique a(byte[] clé, byte[] données) retourne les données déchiffrées.
 
 C. Task 4 — Recherche de chaînes sensibles Recherche textuelle globale effectuée dans JADX GUI (Navigation > Text Search).
 
-image image image
+![lab4](lab43.png)
+![lab4](lab44.png)
+![lab4](lab45.png)
 Pattern Résultat Fichier Risque http:// Aucun résultat — — https:// Aucun résultat — — secret secretKeySpec — clé AES sg.vantagepoint.a.a Moyen key SecretKeySpec, AES/ECB, "test-keys" sg.vantagepoint.a.a Moyen debug "App is debuggable!" — détection active MainActivity Faible password Aucun résultat — — token Aucun résultat — — firebase Aucun résultat — —
 
 Aucune URL, token ou credential n'a été trouvé en clair. La recherche sur "key" révèle l'utilisation de SecretKeySpec pour AES-ECB et la chaîne "test-keys" (détection root). Aucune information critique de production n'est hardcodée. D. Task 5 — Conversion DEX vers JAR avec dex2jar
+![lab4](lab46.png)
 
-image Étape Résultat Fichier DEX extrait classes.dex — 5,528 bytes dans C:\APK-Analysis\dex_out\ Commande utilisée d2j-dex2jar.bat classes.dex -o app.jar Version dex2jar v2.4 Erreurs Aucune Fichier JAR généré C:\APK-Analysis\app.jar Multi-dex Non — un seul classes.dex présent
+![lab4](lab47.png) Étape Résultat Fichier DEX extrait classes.dex — 5,528 bytes dans C:\APK-Analysis\dex_out\ Commande utilisée d2j-dex2jar.bat classes.dex -o app.jar Version dex2jar v2.4 Erreurs Aucune Fichier JAR généré C:\APK-Analysis\app.jar Multi-dex Non — un seul classes.dex présent
 E. Task 6 — Comparaison JADX GUI vs JD-GUI
 
-image image image
+![lab4](lab48.png)
+![lab4](lab49.png)
+![lab4](lab499.png)
 Aspect JADX GUI JD-GUI Navigation Structure Android complète (Manifest, ressources, code) Structure Java uniquement (packages, classes) Ressources Accès direct aux XML, strings.xml, assets Aucun accès aux ressources Android Lisibilité Meilleure reconstruction des noms de variables Noms obfusqués parfois conservés (a, b, c) Recherche Recherche textuelle globale (Ctrl+Shift+F) Recherche limitée au fichier ouvert Workflow Tout-en-un, pas besoin de dex2jar Nécessite conversion DEX->JAR au préalable Conclusion Recommandé pour analyse complète d'APK Utile en outil complémentaire secondaire Conclusion : JADX GUI est l'outil le plus adapté pour une analyse complète d'APK Android. JD-GUI reste utile comme outil complémentaire pour une deuxième lecture du bytecode Java.   Informations générales
 
 Date d'analyse : 03 mars 2026 Analyste : Nisrine APK analysé : UnCrackable-Level1.apk Version : 1.0 (versionCode 1) Provenance : OWASP MAS Crackmes (github.com/OWASP/owasp-mastg) Outils utilisés : JADX GUI v1.5, dex2jar v2.4, JD-GUI v1.6
